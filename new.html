@@ -1,0 +1,206 @@
+import { useEffect, useState, useRef } from "react";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Sparkles } from "lucide-react";
+
+export default function Home() {
+  useEffect(() => {
+    document.title = "TinyTorque - Simple Games. Big Fun.";
+  }, []);
+
+  const [catX, setCatX] = useState(0);
+  const [catY, setCatY] = useState(0);
+  const [audio] = useState(() => new Audio("/sounds/run.mp3"));
+  const [sparkleKey, setSparkleKey] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCatX(Math.random() * window.innerWidth);
+      setCatY(Math.random() * 400);
+      audio.play();
+      setSparkleKey(prev => prev + 1);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [audio]);
+
+  // Flappy Cat Game Logic
+  const canvasRef = useRef(null);
+  const [birdY, setBirdY] = useState(250);
+  const [velocity, setVelocity] = useState(0);
+  const [pipes, setPipes] = useState([{ x: 400, height: 200 }]);
+  const gravity = 0.5;
+
+  useEffect(() => {
+    const handleSpace = (e) => {
+      if (e.code === "Space") setVelocity(-8);
+    };
+    window.addEventListener("keydown", handleSpace);
+    return () => window.removeEventListener("keydown", handleSpace);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setVelocity(v => v + gravity);
+      setBirdY(y => y + velocity);
+      setPipes(ps =>
+        ps.map(p => ({ ...p, x: p.x - 2 })).filter(p => p.x > -60)
+      );
+      if (pipes[pipes.length - 1].x < 250) {
+        const newHeight = 100 + Math.random() * 200;
+        setPipes(p => [...p, { x: 400, height: newHeight }]);
+      }
+    }, 30);
+    return () => clearInterval(interval);
+  }, [velocity, pipes]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    const draw = () => {
+      ctx.clearRect(0, 0, 400, 400);
+      ctx.fillStyle = "skyblue";
+      ctx.fillRect(0, 0, 400, 400);
+
+      // Bird
+      ctx.fillStyle = "black";
+      ctx.beginPath();
+      ctx.arc(50, birdY, 10, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Pipes
+      ctx.fillStyle = "green";
+      pipes.forEach(p => {
+        ctx.fillRect(p.x, 0, 40, p.height);
+        ctx.fillRect(p.x, p.height + 100, 40, 400);
+      });
+    };
+    draw();
+  }, [birdY, pipes]);
+
+  return (
+    <main className="min-h-screen bg-white text-gray-900">
+      {/* Hero Section */}
+      <section className="relative w-full h-screen bg-gradient-to-b from-white to-blue-100 flex flex-col items-center justify-center text-center p-4 overflow-hidden">
+        {/* Particle Effect */}
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          <div className="w-full h-full animate-pulse opacity-10 bg-[radial-gradient(circle,rgba(0,0,0,0.05)_1px,transparent_1px)] bg-[length:20px_20px]" />
+        </div>
+
+        {/* Sparkle Trail */}
+        <motion.div
+          key={sparkleKey}
+          initial={{ opacity: 1, scale: 0.5 }}
+          animate={{ opacity: 0, scale: 2 }}
+          transition={{ duration: 2 }}
+          className="absolute w-24 h-24 pointer-events-none"
+          style={{ top: catY, left: catX }}
+        >
+          <Sparkles className="w-full h-full text-yellow-400" />
+        </motion.div>
+
+        {/* Animated Cat in Background */}
+        <motion.img
+          src="/images/tinytorque-logo.png"
+          alt="Running Cat Logo"
+          initial={{ opacity: 0 }}
+          animate={{ x: catX, y: catY, opacity: 1 }}
+          transition={{ duration: 2 }}
+          className="absolute w-20 h-20 opacity-20"
+        />
+
+        <motion.img
+          src="/images/tinytorque-logo.png"
+          alt="TinyTorque Logo"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1 }}
+          className="w-24 h-24 mb-4 relative z-10"
+        />
+        <motion.h1
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1 }}
+          className="text-5xl font-bold tracking-tight mb-4 relative z-10"
+        >
+          TinyTorque
+        </motion.h1>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5, duration: 1 }}
+          className="text-xl max-w-xl relative z-10"
+        >
+          Where simple games spark endless fun.
+        </motion.p>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1, duration: 1 }}
+          className="mt-6 relative z-10"
+        >
+          <a href="#games">
+            <Button size="lg" className="text-lg">Explore Games</Button>
+          </a>
+        </motion.div>
+      </section>
+
+      {/* Game Section */}
+      <section id="games" className="py-20 px-6 bg-black text-white text-center">
+        <h2 className="text-4xl font-bold mb-6">🎮 Play Flappy Cat</h2>
+        <canvas ref={canvasRef} width="400" height="400" className="mx-auto rounded-xl border-4 border-white" />
+        <p className="mt-4">Press <b>Space</b> to flap!</p>
+      </section>
+
+      {/* Featured Games */}
+      <section className="py-20 px-6 bg-gray-50">
+        <h2 className="text-4xl font-semibold text-center mb-12">🎉 New Release Highlights</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 max-w-7xl mx-auto">
+          {[ 
+            { title: "Flappy Cat", desc: "A twist on the classic Flappy Bird.", image: "/images/flappy-cat.png", link: "/games/flappy-cat" },
+            { title: "Orb Run", desc: "Roll, dodge, and race your way to glory.", image: "/images/orb-run.png", link: "/games/orb-run" },
+            { title: "Hover Hop", desc: "Fly and hop through floating platforms.", image: "/images/hover-hop.png", link: "/games/hover-hop" },
+          ].map((game, i) => (
+            <Card key={i} className="shadow-2xl rounded-2xl overflow-hidden hover:scale-105 transition-transform duration-300">
+              <CardContent className="p-0">
+                <img src={game.image} alt={game.title} className="w-full h-64 object-cover" />
+                <div className="p-6">
+                  <h3 className="text-2xl font-bold mb-2">{game.title}</h3>
+                  <p className="text-gray-700 dark:text-gray-300">{game.desc}</p>
+                  <a href={game.link} target="_blank" rel="noopener noreferrer">
+                    <Button className="mt-4">Play Now</Button>
+                  </a>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      {/* About Section */}
+      <section className="bg-white py-20 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1 }}
+          >
+            <h2 className="text-4xl font-semibold mb-4">About TinyTorque</h2>
+            <p className="text-lg text-gray-600">
+              We're an indie game studio focused on making simple, addictive games that bring joy in small bursts. From quick reflex challenges to relaxing arcade-style experiences, we aim to entertain everyone.
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-10 text-center">
+        <div className="flex justify-center items-center gap-2 mb-2">
+          <img src="/images/tinytorque-logo.png" alt="TinyTorque Logo" className="w-6 h-6" />
+          <span className="text-lg font-bold">TinyTorque</span>
+        </div>
+        <p className="text-sm">© {new Date().getFullYear()} TinyTorque. All rights reserved.</p>
+      </footer>
+    </main>
+  );
+}
